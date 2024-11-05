@@ -1,6 +1,7 @@
-import cv2
 import face_recognition
 import pickle
+import cv2
+import numpy as np
 
 ENCODINGS_FILE = 'encodings.pkl'
 
@@ -15,11 +16,11 @@ video_capture = cv2.VideoCapture(0)
 while True:
     ret, frame = video_capture.read()
     if not ret:
+        print("Failed to capture frame from video source")
         break
 
-    small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
-    
-    rgb_small_frame = small_frame[:, :, ::-1]
+    small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
+    rgb_small_frame = np.ascontiguousarray(small_frame[:, :, ::-1])
 
     face_locations = face_recognition.face_locations(rgb_small_frame)
     face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
@@ -29,14 +30,14 @@ while True:
         name = "Unknown"
 
         face_distances = face_recognition.face_distance(known_encodings, face_encoding)
-        best_match_index = face_distances.argmin()
-        if matches[best_match_index]:
+        best_match_index = np.argmin(face_distances) if face_distances.size > 0 else -1
+        if best_match_index >= 0 and matches[best_match_index]:
             name = known_names[best_match_index]
 
-        top *= 4
-        right *= 4
-        bottom *= 4
-        left *= 4
+        top *= 2
+        right *= 2
+        bottom *= 2
+        left *= 2
 
         cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
         cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 255, 0), cv2.FILLED)
