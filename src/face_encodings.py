@@ -20,9 +20,9 @@ for person_name in os.listdir(KNOWN_FACES_DIR):
                     known_encodings.append(encodings[0])
                     known_names.append(person_name)
                 else:
-                    print(f"There is no face on the image {filename} in folder {person_name}")
+                    print(f"no face on the image {filename} in folder {person_name}")
 
 with open(ENCODINGS_FILE, 'wb') as f:
     pickle.dump({'encodings': known_encodings, 'names': known_names}, f)
 
-print("Faces encodings are saved")
+print("encodings are saved")

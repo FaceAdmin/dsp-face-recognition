@@ -6,11 +6,13 @@ from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropou
 
 TRAIN_DIR = 'Training_Color'
 
+# data augmentation for training, includes validation split
 train_datagen = ImageDataGenerator(
     rescale=1.0/255.0,
     validation_split=0.2
 )
 
+# training data generator
 train_generator = train_datagen.flow_from_directory(
     TRAIN_DIR,
     target_size=(64, 64),
@@ -19,6 +21,7 @@ train_generator = train_datagen.flow_from_directory(
     subset='training'
 )
 
+# validation data generator
 val_generator = train_datagen.flow_from_directory(
     TRAIN_DIR,
     target_size=(64, 64),
@@ -26,6 +29,7 @@ val_generator = train_datagen.flow_from_directory(
     class_mode='binary',
     subset='validation')
 
+# cnn model
 model = Sequential([
     Conv2D(32, (3, 3), activation='relu', input_shape=(64, 64, 3)),
     MaxPooling2D(pool_size=(2, 2)),
@@ -42,10 +46,9 @@ model = Sequential([
     Dense(1, activation='sigmoid')
 ])
 
-model.compile(optimizer='adam',
-              loss='binary_crossentropy',
-              metrics=['accuracy'])
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
+# train the model
 model.fit(
     train_generator,
     steps_per_epoch=train_generator.samples // train_generator.batch_size,
@@ -56,4 +59,4 @@ model.fit(
 
 model.save('liveness_model.h5')
 
-print("Model training complete and saved as liveness.model")
+print("training completed")
