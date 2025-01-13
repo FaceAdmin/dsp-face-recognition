@@ -5,7 +5,7 @@ import face_recognition
 from tensorflow.keras.models import load_model
 
 ENCODINGS_FILE = 'data/encodings.pkl'
-LIVENESS_MODEL_PATH = 'models/livenessmodel.h5'
+LIVENESS_MODEL_PATH = 'models/liveness_model.h5'
 
 with open(ENCODINGS_FILE, 'rb') as f:
     data = pickle.load(f)
