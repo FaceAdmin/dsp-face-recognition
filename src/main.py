@@ -36,22 +36,18 @@ while True:
     face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
 
     for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
-        # compare detected face encoding to known encodings
         matches = face_recognition.compare_faces(known_encodings, face_encoding)
         name = "Unknown"
 
-        # find the best match for the face
         face_distances = face_recognition.face_distance(known_encodings, face_encoding)
         best_match_index = np.argmin(face_distances) if face_distances.size > 0 else -1
         if best_match_index >= 0 and matches[best_match_index]:
             name = known_names[best_match_index]
 
-        # extract the face from the frame for liveness detection
         face = small_frame[top:bottom, left:right]
         if face.size > 0:
             face_preprocessed = preprocess_face(face, target_size=(64, 64))
 
-            # prediction
             liveness_pred = liveness_model.predict(face_preprocessed)[0][0]
             liveness_label = "Real" if liveness_pred > 0.5 else "Fake"
             
