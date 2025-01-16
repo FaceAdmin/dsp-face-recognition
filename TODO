@@ -1,5 +1,0 @@
-1. Improve liveness detection. Possible solutions: 
-    1. Add some dataset with pics of faces in smartphone
-    2. Add blink, head movement detection
-2. Store data in the database 
-3. Build web interface
