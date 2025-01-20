@@ -6,7 +6,6 @@ class APIClient:
         self.base_url = API_BASE_URL
 
     def fetch_user_photos(self):
-        """Получить все фотографии из базы данных через API."""
         response = requests.get(self.base_url + PHOTO_ENDPOINT)
         if response.status_code == 200:
             return response.json()
@@ -14,7 +13,6 @@ class APIClient:
             raise Exception(f"API Error: {response.status_code}")
 
     def record_attendance(self, user_id, check_in=True):
-        """Записать вход или выход в таблицу attendance."""
         payload = {
             "user_id": user_id,
             "check_in": check_in

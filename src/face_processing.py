@@ -8,15 +8,25 @@ def encode_faces(photo_data):
     for photo in photo_data:
         user_id = photo["user_id"]
         photo_path = photo["photo_path"]
+        print(f"[INFO] Processing photo for user {user_id}: {photo_path}")
+
         image = load_image_from_url(photo_path)
+        if image is None:
+            print(f"[WARNING] Skipping photo for user {user_id}.")
+            continue
+
         face_locations = face_recognition.face_locations(image)
         encodings = face_recognition.face_encodings(image, face_locations)
 
-        if user_id not in face_encodings:
-            face_encodings[user_id] = []
-        face_encodings[user_id].extend(encodings)
+        if encodings:
+            if user_id not in face_encodings:
+                face_encodings[user_id] = []
+            face_encodings[user_id].extend(encodings)
+        else:
+            print(f"[WARNING] No face found in photo for user {user_id}.")
 
     return face_encodings
+
 
 
 def load_image_from_url(url):
