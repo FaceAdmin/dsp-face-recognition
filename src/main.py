@@ -1,10 +1,14 @@
+import datetime
 import cv2
+import numpy as np
+import face_recognition
+import time
 from api_client import APIClient
-from face_processing import encode_faces, face_recognition
+from face_processing import encode_faces
 
 def main():
     api_client = APIClient()
-    
+
     print("[INFO] Fetching photos from API...")
     try:
         photos = api_client.fetch_user_photos()
@@ -20,41 +24,61 @@ def main():
         print(f"[ERROR] Failed to encode faces: {e}")
         return
     
-    print("[INFO] Starting camera...")
-    camera = cv2.VideoCapture(0)
-    if not camera.isOpened():
+    print("[INFO] Starting video stream...")
+    video_capture = cv2.VideoCapture(0)
+    if not video_capture.isOpened():
         print("[ERROR] Camera could not be opened.")
         return
 
+    cooldown_time = 5
+    last_recognition_time = {}
+
     try:
         while True:
-            ret, frame = camera.read()
+            ret, frame = video_capture.read()
             if not ret:
                 print("[ERROR] Failed to capture frame. Exiting...")
                 break
 
-            try:
-                print("[INFO] Capturing frame...")
-                rgb_frame = frame[:, :, ::-1]
-                face_locations = face_recognition.face_locations(rgb_frame)
-                print(f"[INFO] Detected {len(face_locations)} face(s).")
+            small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
+            rgb_small_frame = np.ascontiguousarray(small_frame[:, :, ::-1])
 
-                if len(face_locations) > 0:
-                    current_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+            face_locations = face_recognition.face_locations(rgb_small_frame)
+            face_encodings_in_frame = face_recognition.face_encodings(rgb_small_frame, face_locations)
 
-                    for encoding in current_encodings:
-                        matches = face_recognition.compare_faces(list(face_encodings.values()), encoding)
-                        if True in matches:
-                            matched_user_id = list(face_encodings.keys())[matches.index(True)]
-                            print(f"[INFO] Access Granted for User ID: {matched_user_id}")
-                            api_client.record_attendance(user_id=matched_user_id, check_in=True)
-                        else:
-                            print("[WARNING] Access Denied!")
-            except Exception as e:
-                print(f"[ERROR] Error during face recognition: {e}")
-                continue
+            for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings_in_frame):
+                matches = face_recognition.compare_faces(list(face_encodings.values()), face_encoding)
+                name = "Unknown"
 
-            cv2.imshow("Face Recognition", frame)
+                face_distances = face_recognition.face_distance(list(face_encodings.values()), face_encoding)
+                best_match_index = np.argmin(face_distances) if face_distances.size > 0 else -1
+
+                if best_match_index >= 0 and best_match_index < len(matches) and np.any(matches[best_match_index]):
+                    matched_user_id = list(face_encodings.keys())[best_match_index]
+                    name = f"User {matched_user_id}"
+
+                    current_time = time.time()
+                    if matched_user_id not in last_recognition_time or \
+                    (current_time - last_recognition_time[matched_user_id] > cooldown_time):
+                        print(f"[INFO] Access Granted for User ID: {matched_user_id}")
+                        check_in_time = datetime.datetime.now(datetime.timezone.utc).isoformat()
+                        api_client.record_attendance(user_id=matched_user_id, check_in_time=check_in_time)
+                        last_recognition_time[matched_user_id] = current_time
+
+                else:
+                    print(f"[INFO] No match found for current face.")
+
+                top *= 2
+                right *= 2
+                bottom *= 2
+                left *= 2
+                cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
+                cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 255, 0), cv2.FILLED)
+                font = cv2.FONT_HERSHEY_DUPLEX
+                cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
+
+            cv2.imshow('Face Recognition', frame)
+
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 print("[INFO] Exiting program...")
                 break
@@ -62,7 +86,7 @@ def main():
     except KeyboardInterrupt:
         print("[INFO] Program interrupted by user.")
     finally:
-        camera.release()
+        video_capture.release()
         cv2.destroyAllWindows()
         print("[INFO] Camera closed.")
 
