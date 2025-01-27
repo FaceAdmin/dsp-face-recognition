@@ -24,20 +24,20 @@ def main():
         print(f"[ERROR] Failed to encode faces: {e}")
         return
     
-    print("[INFO] Starting video stream...")
+    print("[INFO] Starting web camera")
     video_capture = cv2.VideoCapture(0)
     if not video_capture.isOpened():
-        print("[ERROR] Camera could not be opened.")
+        print("[ERROR] Camera could not be opened")
         return
 
-    cooldown_time = 5
+    cooldown_time = 10
     last_recognition_time = {}
 
     try:
         while True:
             ret, frame = video_capture.read()
             if not ret:
-                print("[ERROR] Failed to capture frame. Exiting...")
+                print("[ERROR] Failed to capture frame")
                 break
 
             small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
@@ -48,14 +48,12 @@ def main():
 
             for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings_in_frame):
                 matches = face_recognition.compare_faces(list(face_encodings.values()), face_encoding)
-                name = "Unknown"
 
                 face_distances = face_recognition.face_distance(list(face_encodings.values()), face_encoding)
                 best_match_index = np.argmin(face_distances) if face_distances.size > 0 else -1
 
                 if best_match_index >= 0 and best_match_index < len(matches) and np.any(matches[best_match_index]):
                     matched_user_id = list(face_encodings.keys())[best_match_index]
-                    name = f"User {matched_user_id}"
 
                     current_time = time.time()
                     if matched_user_id not in last_recognition_time or \
@@ -66,7 +64,7 @@ def main():
                         last_recognition_time[matched_user_id] = current_time
 
                 else:
-                    print(f"[INFO] No match found for current face.")
+                    print(f"[INFO] No match found for current face")
 
                 top *= 2
                 right *= 2
@@ -74,21 +72,19 @@ def main():
                 left *= 2
                 cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
                 cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 255, 0), cv2.FILLED)
-                font = cv2.FONT_HERSHEY_DUPLEX
-                cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
 
             cv2.imshow('Face Recognition', frame)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
-                print("[INFO] Exiting program...")
+                print("[INFO] Exiting program")
                 break
 
     except KeyboardInterrupt:
-        print("[INFO] Program interrupted by user.")
+        print("[INFO] Program interrupted by user")
     finally:
         video_capture.release()
         cv2.destroyAllWindows()
-        print("[INFO] Camera closed.")
+        print("[INFO] Camera closed")
 
 if __name__ == "__main__":
     main()
