@@ -6,7 +6,7 @@ import requests
 def encode_faces(photo_data):
     face_encodings = {}
     for photo in photo_data:
-        user_id = photo["user_id"]
+        user_id = photo["user"]
         photo_path = photo["photo_path"]
         print(f"[INFO] Processing photo for user {user_id}: {photo_path}")
 
