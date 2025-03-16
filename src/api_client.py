@@ -7,43 +7,41 @@ class APIClient:
         self.base_url = API_BASE_URL
 
     def fetch_user_photos(self):
-        response = requests.get(self.base_url + PHOTO_ENDPOINT)
-        if response.status_code == 200:
+        url = self.base_url + PHOTO_ENDPOINT
+        response = requests.get(url)
+        if response.ok:
             return response.json()
         else:
             raise Exception(f"API Error: {response.status_code}")
-        
-    def calculate_duration(self, check_in, check_out):
-        check_in_time = datetime.datetime.fromisoformat(check_in.replace('Z', '+00:00'))
-        check_out_time = datetime.datetime.fromisoformat(check_out.replace('Z', '+00:00'))
-        duration = check_out_time - check_in_time
-        return str(duration)
 
-    def record_attendance(self, user_id, check_in_time=None):
-        response = requests.get(f"{self.base_url}{ATTENDANCE_ENDPOINT}?user_id={user_id}")
-        if response.status_code == 200:
-            attendances = response.json()
-            if attendances and attendances[-1]["check_out"] is None:
-                payload = {
-                    "check_out": check_in_time,
-                    "duration": self.calculate_duration(attendances[-1]["check_in"], check_in_time),
-                }
-                attendance_id = attendances[-1]["attendance_id"]
-                response = requests.patch(f"{self.base_url}{ATTENDANCE_ENDPOINT}{attendance_id}/", json=payload)
-                if response.status_code == 200:
-                    print("Check-out recorded successfully.")
-                else:
-                    raise Exception(f"Failed to record check-out: {response.status_code}")
+    def record_attendance(self, user_id: int):
+        current_time = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+        url = f"{self.base_url}{ATTENDANCE_ENDPOINT}?user_id={user_id}"
+        resp = requests.get(url)
+        if not resp.ok:
+            raise Exception(f"Failed to fetch attendance records: {resp.status_code}")
+
+        records = resp.json()
+        if records and records[-1]["check_out"] is None:
+            attendance_id = records[-1]["attendance_id"]
+            payload = {
+                "check_out": current_time
+            }
+            patch_url = f"{self.base_url}{ATTENDANCE_ENDPOINT}{attendance_id}/"
+            resp_patch = requests.patch(patch_url, json=payload)
+            if resp_patch.ok:
+                print(f"[INFO] Check-out recorded for user {user_id}.")
             else:
-                payload = {
-                    "user": user_id,
-                    "check_in": check_in_time,
-                }
-                response = requests.post(self.base_url + ATTENDANCE_ENDPOINT, json=payload)
-                if response.status_code == 201:
-                    print("Check-in recorded successfully.")
-                else:
-                    raise Exception(f"Failed to record check-in: {response.status_code}")
+                raise Exception(f"Failed to record check-out: {resp_patch.status_code}")
         else:
-            raise Exception(f"Failed to fetch attendance records: {response.status_code}")
-
+            payload = {
+                "user": user_id,
+                "check_in": current_time
+            }
+            post_url = self.base_url + ATTENDANCE_ENDPOINT
+            resp_post = requests.post(post_url, json=payload)
+            if resp_post.status_code == 201:
+                print(f"[INFO] Check-in recorded for user {user_id}.")
+            else:
+                raise Exception(f"Failed to record check-in: {resp_post.status_code}")
