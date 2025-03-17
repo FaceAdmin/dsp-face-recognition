@@ -75,9 +75,9 @@ def main():
                         try:
                             api.record_attendance(user_id)
                             user_details = api.get_user(user_id)
-                            check_in_date = datetime.now().strftime("%d.%m.%Y")
+                            time = datetime.now().strftime("%d/%m/%Y, %H:%M")
                             full_name = f"{user_details.get('fname', 'Unknown')} {user_details.get('lname', '')}".strip()
-                            print(f"Check in: {check_in_date}\nUser: {full_name}")
+                            print(f"Time: {time}\nUser: {full_name}")
                         except Exception as e:
                             print(f"[ERROR] {e}")
                         last_time_recorded[user_id] = current_time

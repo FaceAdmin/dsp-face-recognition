@@ -46,15 +46,16 @@ class APIClient:
         if resp.ok:
             data = resp.json()
             if data:
-                user = data[0]["user"]
-                if isinstance(user, int):
-                    return self.get_user(user)
-                return user
+                user = data.get("user")
+                if not user:
+                    raise Exception("Entry code not linked to any user_id")
+                
+                user_details = self.get_user(user)
+                return user_details
             else:
                 raise Exception("Entry code not found")
         else:
             raise Exception(f"Failed to fetch entry code: {resp.status_code}")
-
 
     def get_user(self, user_id: int):
         url = f"{self.base_url}{USER_ENDPOINT}{user_id}/"

@@ -9,7 +9,6 @@ def main():
         
         if code.lower() == "q":
             break
-        
         if not re.fullmatch(r"\d{8}", code):
             print("[ERROR] Invalid Input")
             continue
@@ -28,8 +27,8 @@ def main():
                 user_details = api.get_user(user_id)
                 full_name = f"{user_details.get('fname', 'Unknown')} {user_details.get('lname', '')}".strip()
             
-            check_in_date = datetime.now().strftime("%d.%m.%Y")
-            print(f"Check in: {check_in_date}\nUser: {full_name}")
+            time = datetime.now().strftime("%d/%m/%Y, %H:%M")
+            print(f"Time: {time}\nUser: {full_name}")
             print("[INFO] Attendance recorded successfully.")
         except Exception as e:
             print(f"[ERROR] {e}")
