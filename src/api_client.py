@@ -15,6 +15,11 @@ class APIClient:
             raise Exception(f"API Error: {response.status_code}")
 
     def record_attendance(self, user_id: int):
+        user_data = self.get_user(user_id)
+        fname = user_data.get("fname", "")
+        lname = user_data.get("lname", "")
+        email = user_data.get("email", "")
+
         current_time = datetime.datetime.now(datetime.timezone.utc).isoformat()
         url = f"{self.base_url}{ATTENDANCE_ENDPOINT}?user_id={user_id}"
         resp = requests.get(url)
@@ -28,7 +33,9 @@ class APIClient:
             patch_url = f"{self.base_url}{ATTENDANCE_ENDPOINT}{attendance_id}/"
             resp_patch = requests.patch(patch_url, json=payload)
             if resp_patch.ok:
-                print(f"[INFO] Check-out recorded for user {user_id}.")
+                print("[INFO] Check-out recorded")
+                log_message = f"{fname} {lname} ({email}) checked out."
+                requests.post(f"{self.base_url}/logs/", json={"user": user_id, "action": log_message})
             else:
                 raise Exception(f"Failed to record check-out: {resp_patch.status_code}")
         else:
@@ -36,7 +43,9 @@ class APIClient:
             post_url = self.base_url + ATTENDANCE_ENDPOINT
             resp_post = requests.post(post_url, json=payload)
             if resp_post.status_code == 201:
-                print(f"[INFO] Check-in recorded for user {user_id}.")
+                print("[INFO] Check-in recorded")
+                log_message = f"{fname} {lname} ({email}) checked in."
+                requests.post(f"{self.base_url}/logs/", json={"user": user_id, "action": log_message})
             else:
                 raise Exception(f"Failed to record check-in: {resp_post.status_code}")
 
