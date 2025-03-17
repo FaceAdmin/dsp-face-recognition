@@ -1,6 +1,6 @@
 import datetime
 import requests
-from config import API_BASE_URL, PHOTO_ENDPOINT, ATTENDANCE_ENDPOINT
+from config import API_BASE_URL, PHOTO_ENDPOINT, ATTENDANCE_ENDPOINT, USER_ENDPOINT, ENTRY_CODE_ENDPOINT
 
 class APIClient:
     def __init__(self):
@@ -16,7 +16,6 @@ class APIClient:
 
     def record_attendance(self, user_id: int):
         current_time = datetime.datetime.now(datetime.timezone.utc).isoformat()
-
         url = f"{self.base_url}{ATTENDANCE_ENDPOINT}?user_id={user_id}"
         resp = requests.get(url)
         if not resp.ok:
@@ -25,9 +24,7 @@ class APIClient:
         records = resp.json()
         if records and records[-1]["check_out"] is None:
             attendance_id = records[-1]["attendance_id"]
-            payload = {
-                "check_out": current_time
-            }
+            payload = {"check_out": current_time}
             patch_url = f"{self.base_url}{ATTENDANCE_ENDPOINT}{attendance_id}/"
             resp_patch = requests.patch(patch_url, json=payload)
             if resp_patch.ok:
@@ -35,13 +32,34 @@ class APIClient:
             else:
                 raise Exception(f"Failed to record check-out: {resp_patch.status_code}")
         else:
-            payload = {
-                "user": user_id,
-                "check_in": current_time
-            }
+            payload = {"user": user_id, "check_in": current_time}
             post_url = self.base_url + ATTENDANCE_ENDPOINT
             resp_post = requests.post(post_url, json=payload)
             if resp_post.status_code == 201:
                 print(f"[INFO] Check-in recorded for user {user_id}.")
             else:
                 raise Exception(f"Failed to record check-in: {resp_post.status_code}")
+
+    def get_user_by_code(self, code: str):
+        url = f"{self.base_url}{ENTRY_CODE_ENDPOINT}?code={code}"
+        resp = requests.get(url)
+        if resp.ok:
+            data = resp.json()
+            if data:
+                user = data[0]["user"]
+                if isinstance(user, int):
+                    return self.get_user(user)
+                return user
+            else:
+                raise Exception("Entry code not found")
+        else:
+            raise Exception(f"Failed to fetch entry code: {resp.status_code}")
+
+
+    def get_user(self, user_id: int):
+        url = f"{self.base_url}{USER_ENDPOINT}{user_id}/"
+        resp = requests.get(url)
+        if resp.ok:
+            return resp.json()
+        else:
+            raise Exception(f"Failed to fetch user: {resp.status_code}")

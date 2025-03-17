@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import face_recognition
 import time
+from datetime import datetime
 from api_client import APIClient
 from face_processing import encode_faces
 
@@ -37,10 +38,8 @@ def main():
 
     frame_skip = 5
     frame_count = 0
-
     cooldown_time = 10
     last_time_recorded = {}
-
     tolerance = 0.45
 
     try:
@@ -64,7 +63,6 @@ def main():
             face_locations = face_recognition.face_locations(rgb_small_frame)
             face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
 
-
             for loc, enc in zip(face_locations, face_encodings):
                 matches = face_recognition.compare_faces(known_encodings, enc, tolerance=tolerance)
                 face_distances = face_recognition.face_distance(known_encodings, enc)
@@ -73,10 +71,15 @@ def main():
                 if best_idx != -1 and matches[best_idx]:
                     user_id = known_user_ids[best_idx]
                     current_time = time.time()
-
                     if user_id not in last_time_recorded or (current_time - last_time_recorded[user_id]) > cooldown_time:
-                        print(f"[INFO] Recognized user: {user_id}. Recording attendance...")
-                        api.record_attendance(user_id)
+                        try:
+                            api.record_attendance(user_id)
+                            user_details = api.get_user(user_id)
+                            check_in_date = datetime.now().strftime("%d.%m.%Y")
+                            full_name = f"{user_details.get('fname', 'Unknown')} {user_details.get('lname', '')}".strip()
+                            print(f"Check in: {check_in_date}\nUser: {full_name}")
+                        except Exception as e:
+                            print(f"[ERROR] {e}")
                         last_time_recorded[user_id] = current_time
                 else:
                     print("[INFO] Unknown face detected.")
@@ -86,7 +89,6 @@ def main():
                 right *= 4
                 bottom *= 4
                 left *= 4
-
                 cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
 
             cv2.imshow("Face Recognition", frame)
