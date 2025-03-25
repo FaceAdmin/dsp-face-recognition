@@ -2,3 +2,4 @@ opencv-python
 face_recognition
 numpy==1.26.3
 tensorflow
+PyQT5
