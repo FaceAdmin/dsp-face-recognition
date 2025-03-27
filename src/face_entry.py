@@ -58,7 +58,7 @@ class FaceRecognitionWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Face Recognition Entry")
-        self.resize(1280, 720)
+        self.resize(800, 600)
 
         self.video_label = QtWidgets.QLabel()
         self.video_label.setScaledContents(True)
