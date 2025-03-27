@@ -1,6 +1,6 @@
 import datetime
 import requests
-from config import API_BASE_URL, PHOTO_ENDPOINT, ATTENDANCE_ENDPOINT, USER_ENDPOINT, ENTRY_CODE_ENDPOINT
+from config import API_BASE_URL, PHOTO_ENDPOINT, ATTENDANCE_ENDPOINT, USER_ENDPOINT
 
 class APIClient:
     def __init__(self):
@@ -49,23 +49,6 @@ class APIClient:
             else:
                 raise Exception(f"Failed to record check-in: {resp_post.status_code}")
 
-    def get_user_by_code(self, code: str):
-        url = f"{self.base_url}{ENTRY_CODE_ENDPOINT}?code={code}"
-        resp = requests.get(url)
-        if resp.ok:
-            data = resp.json()
-            if data:
-                user = data.get("user")
-                if not user:
-                    raise Exception("Entry code not linked to any user_id")
-                
-                user_details = self.get_user(user)
-                return user_details
-            else:
-                raise Exception("Entry code not found")
-        else:
-            raise Exception(f"Failed to fetch entry code: {resp.status_code}")
-
     def get_user(self, user_id: int):
         url = f"{self.base_url}{USER_ENDPOINT}{user_id}/"
         resp = requests.get(url)
@@ -73,3 +56,15 @@ class APIClient:
             return resp.json()
         else:
             raise Exception(f"Failed to fetch user: {resp.status_code}")
+        
+    def verify_otp(self, email: str, otp_code: str):
+            """Проверяем одноразовый код на бэкенде."""
+            url = f"{self.base_url}/users/verify-otp/"
+            data = {"email": email, "otp_code": otp_code}
+            resp = requests.post(url, json=data)
+            if resp.status_code == 200:
+                # Предположим, что в ответе приходит {"message": "...", "user_id": 123}
+                # Или, если такого нет — нужно изменить бэкенд, чтобы возвращать user_id
+                return resp.json()
+            else:
+                raise Exception(f"OTP verification failed: {resp.text}")
