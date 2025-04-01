@@ -3,3 +3,8 @@ face_recognition
 numpy==1.26.3
 tensorflow
 PyQT5
+torch
+torchvision
+onnxruntime==1.14.1
+progressbar
+requests
