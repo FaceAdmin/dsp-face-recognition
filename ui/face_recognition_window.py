@@ -1,4 +1,3 @@
-# ui/main_window.py
 import time
 import cv2
 import face_recognition
@@ -105,7 +104,7 @@ class FaceRecognitionWindow(QtWidgets.QMainWindow):
                     try:
                         self.api.record_attendance(user_id)
                         user_details = self.api.get_user(user_id)
-                        full_name = f"{user_details.get('fname', 'Unknown')} {user_details.get('lname', '')}".strip()
+                        full_name = f"{user_details.get('first_name', 'Unknown')} {user_details.get('last_name', '')}".strip()
                         self.overlay_text = f"Access Granted: {full_name}"
                         self.overlay_color = (0, 255, 0)
                         self.overlay_until = time.time() + 3

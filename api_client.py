@@ -16,8 +16,8 @@ class APIClient:
 
     def record_attendance(self, user_id: int):
         user_data = self.get_user(user_id)
-        fname = user_data.get("fname", "")
-        lname = user_data.get("lname", "")
+        first_name = user_data.get("first_name", "")
+        last_name = user_data.get("last_name", "")
         email = user_data.get("email", "")
 
         current_time = datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -34,7 +34,7 @@ class APIClient:
             resp_patch = requests.patch(patch_url, json=payload)
             if resp_patch.ok:
                 print("[INFO] Check-out recorded")
-                log_message = f"{fname} {lname} ({email}) checked out."
+                log_message = f"{first_name} {last_name} ({email}) checked out."
                 requests.post(f"{self.base_url}/logs/", json={"user": user_id, "action": log_message})
             else:
                 raise Exception(f"Failed to record check-out: {resp_patch.status_code}")
@@ -44,7 +44,7 @@ class APIClient:
             resp_post = requests.post(post_url, json=payload)
             if resp_post.status_code == 201:
                 print("[INFO] Check-in recorded")
-                log_message = f"{fname} {lname} ({email}) checked in."
+                log_message = f"{first_name} {last_name} ({email}) checked in."
                 requests.post(f"{self.base_url}/logs/", json={"user": user_id, "action": log_message})
             else:
                 raise Exception(f"Failed to record check-in: {resp_post.status_code}")
