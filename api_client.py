@@ -13,6 +13,17 @@ class APIClient:
             return response.json()
         else:
             raise Exception(f"API Error: {response.status_code}")
+        
+    def fetch_aggregated_encodings(self):
+        """
+        Получаем агрегированные encoding для всех пользователей.
+        """
+        url = f"{self.base_url}/photos/get-encodings/"
+        response = requests.get(url)
+        if response.ok:
+            return response.json()
+        else:
+            raise Exception(f"API Error: {response.status_code}, {response.text}")
 
     def record_attendance(self, user_id: int):
         user_data = self.get_user(user_id)

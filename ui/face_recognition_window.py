@@ -5,7 +5,6 @@ import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 from api_client import APIClient
-from face_processing import encode_faces
 from facetools.liveness_detection import LivenessDetector
 from config import OULU_MODEL_PATH, LIVENESS_THRESHOLD
 from ui.dialogs import OTPDialog
@@ -54,15 +53,16 @@ class FaceRecognitionWindow(QtWidgets.QMainWindow):
         known_encodings = []
         known_user_ids = []
         try:
-            photos = self.api.fetch_user_photos()
-            enc_dict = encode_faces(photos)
-            for user_id, enc_list in enc_dict.items():
-                for enc in enc_list:
-                    known_encodings.append(enc)
-                    known_user_ids.append(user_id)
+            # Новый метод API, который вы должны реализовать на бэкенде:
+            aggregated_encodings = self.api.fetch_aggregated_encodings()
+            for user_id_str, enc in aggregated_encodings.items():
+                # Приводим user_id к числовому виду (если необходимо)
+                known_encodings.append(np.array(enc))  # Преобразуем в numpy array
+                known_user_ids.append(int(user_id_str))
         except Exception as e:
             print("[ERROR load_encodings]", e)
         return known_encodings, known_user_ids
+
 
     def update_frame(self):
         ret, frame = self.cap.read()
