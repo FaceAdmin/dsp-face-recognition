@@ -1,6 +1,5 @@
 import urllib
 from pathlib import Path
-
 import cv2
 import numpy as np
 import onnxruntime
@@ -46,10 +45,6 @@ class LivenessDetector:
         ])
 
     def get_liveness_score(self, face_bgr: np.ndarray) -> float:
-        """
-        Принимает фрагмент лица (BGR) и возвращает float (0..1).
-        Чем выше значение, тем "живее" лицо.
-        """
         face_rgb = cv2.cvtColor(face_bgr, cv2.COLOR_BGR2RGB)
         pil_img = Image.fromarray(face_rgb)
         tensor_img = self.transform(pil_img).unsqueeze(0).numpy()

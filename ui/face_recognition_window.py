@@ -3,8 +3,6 @@ import cv2
 import face_recognition
 import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets
-
-from api_client import APIClient
 from facetools.liveness_detection import LivenessDetector
 from config import OULU_MODEL_PATH, LIVENESS_THRESHOLD
 from ui.dialogs import OTPDialog
@@ -13,10 +11,11 @@ from ui.overlay import draw_overlay
 class FaceRecognitionWindow(QtWidgets.QMainWindow):
     UNKNOWN_TIMEOUT = 7
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, api_client=None):
         super().__init__(parent)
+        self.api = api_client
         self.setWindowTitle("Face Recognition Entry")
-        self.resize(1600, 1200)
+        self.resize(800, 600)
         self.video_label = QtWidgets.QLabel()
         self.video_label.setScaledContents(True)
         central_widget = QtWidgets.QWidget()
@@ -25,9 +24,8 @@ class FaceRecognitionWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.video_label)
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
-
-        self.api = APIClient()
         self.cap = cv2.VideoCapture(0)
+
         if not self.cap.isOpened():
             print("[ERROR] Could not open camera.")
             return
@@ -35,6 +33,9 @@ class FaceRecognitionWindow(QtWidgets.QMainWindow):
         self.known_encodings, self.known_user_ids = self.load_encodings_from_api()
         self.tolerance = 0.45
         self.cooldown_time = 10
+        self.process_every = 7
+        self.frame_counter = 0
+        self.last_face_rectangles = []
         self.last_time_recorded = {}
         self.unknown_face_start = None
         self.otp_dialog_shown = False
@@ -53,21 +54,31 @@ class FaceRecognitionWindow(QtWidgets.QMainWindow):
         known_encodings = []
         known_user_ids = []
         try:
-            # Новый метод API, который вы должны реализовать на бэкенде:
             aggregated_encodings = self.api.fetch_aggregated_encodings()
             for user_id_str, enc in aggregated_encodings.items():
-                # Приводим user_id к числовому виду (если необходимо)
-                known_encodings.append(np.array(enc))  # Преобразуем в numpy array
+                known_encodings.append(np.array(enc))
                 known_user_ids.append(int(user_id_str))
         except Exception as e:
             print("[ERROR load_encodings]", e)
         return known_encodings, known_user_ids
 
-
     def update_frame(self):
         ret, frame = self.cap.read()
         if not ret:
             return
+
+        self.frame_counter += 1
+
+        if self.frame_counter % self.process_every != 0:
+            for rect, color in self.last_face_rectangles:
+                (left_orig, top_orig, right_orig, bottom_orig) = rect
+                cv2.rectangle(frame, (left_orig, top_orig), (right_orig, bottom_orig), color, 2)
+            if time.time() < self.overlay_until and self.overlay_text:
+                draw_overlay(frame, self.overlay_text, self.overlay_color)
+            self.display_frame(frame)
+            return
+
+        self.last_face_rectangles = []
 
         small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
         rgb_small_frame = small_frame[:, :, ::-1]
@@ -76,6 +87,13 @@ class FaceRecognitionWindow(QtWidgets.QMainWindow):
         face_locations = face_recognition.face_locations(rgb_small_frame)
         face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
         recognized_anyone = False
+
+        if face_locations:
+            if self.unknown_face_start is None:
+                self.unknown_face_start = time.time()
+        else:
+            self.unknown_face_start = None
+            self.otp_dialog_shown = False
 
         for (top, right, bottom, left), face_enc in zip(face_locations, face_encodings):
             top_orig    = top * 4
@@ -89,7 +107,7 @@ class FaceRecognitionWindow(QtWidgets.QMainWindow):
 
             liveness_score = self.liveness_detector.get_liveness_score(face_bgr)
             if liveness_score < LIVENESS_THRESHOLD:
-                cv2.rectangle(frame, (left_orig, top_orig), (right_orig, bottom_orig), (0, 0, 255), 2)
+                self.last_face_rectangles.append(((left_orig, top_orig, right_orig, bottom_orig), (0, 0, 255)))
                 continue
 
             matches = face_recognition.compare_faces(self.known_encodings, face_enc, self.tolerance)
@@ -107,32 +125,35 @@ class FaceRecognitionWindow(QtWidgets.QMainWindow):
                         full_name = f"{user_details.get('first_name', 'Unknown')} {user_details.get('last_name', '')}".strip()
                         self.overlay_text = f"Access Granted: {full_name}"
                         self.overlay_color = (0, 255, 0)
-                        self.overlay_until = time.time() + 3
+                        self.overlay_until = time.time() + 3  # Overlay показывается 3 секунды
                     except Exception as e:
                         print("[ERROR record_attendance]", e)
                     self.last_time_recorded[user_id] = current_time
-                cv2.rectangle(frame, (left_orig, top_orig), (right_orig, bottom_orig), (0, 255, 0), 2)
+                self.last_face_rectangles.append(((left_orig, top_orig, right_orig, bottom_orig), (0, 255, 0)))
             else:
-                cv2.rectangle(frame, (left_orig, top_orig), (right_orig, bottom_orig), (255, 255, 0), 2)
+                self.last_face_rectangles.append(((left_orig, top_orig, right_orig, bottom_orig), (255, 255, 0)))
 
-        if recognized_anyone:
-            self.unknown_face_start = None
-            self.otp_dialog_shown = False
-        else:
-            if face_locations:
-                if self.unknown_face_start is None:
-                    self.unknown_face_start = time.time()
-                else:
-                    elapsed = time.time() - self.unknown_face_start
-                    if elapsed >= self.UNKNOWN_TIMEOUT and not self.otp_dialog_shown:
-                        self.show_otp_dialog()
-            else:
-                self.unknown_face_start = None
-                self.otp_dialog_shown = False
+        # Если ни одно лицо не распознано, проверяем, прошло ли время для вызова OTP
+        if not recognized_anyone and self.unknown_face_start is not None:
+            elapsed = time.time() - self.unknown_face_start
+            # Измените на нужное время (например, 10 секунд)
+            if elapsed >= self.UNKNOWN_TIMEOUT and not self.otp_dialog_shown:
+                self.show_otp_dialog()
 
+        # Отрисовываем overlay, если период еще активен
         if time.time() < self.overlay_until and self.overlay_text:
             draw_overlay(frame, self.overlay_text, self.overlay_color)
 
+        # Отрисовываем все рамки, сохранённые в last_face_rectangles
+        for rect, color in self.last_face_rectangles:
+            (left_orig, top_orig, right_orig, bottom_orig) = rect
+            cv2.rectangle(frame, (left_orig, top_orig), (right_orig, bottom_orig), color, 2)
+
+        self.display_frame(frame)
+
+
+
+    def display_frame(self, frame):
         h, w, ch = frame.shape
         qimg = QtGui.QImage(frame.data, w, h, ch * w, QtGui.QImage.Format_BGR888)
         pix = QtGui.QPixmap.fromImage(qimg)
