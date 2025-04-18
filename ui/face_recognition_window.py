@@ -125,7 +125,7 @@ class FaceRecognitionWindow(QtWidgets.QMainWindow):
                         full_name = f"{user_details.get('first_name', 'Unknown')} {user_details.get('last_name', '')}".strip()
                         self.overlay_text = f"Access Granted: {full_name}"
                         self.overlay_color = (0, 255, 0)
-                        self.overlay_until = time.time() + 3  # Overlay показывается 3 секунды
+                        self.overlay_until = time.time() + 3
                     except Exception as e:
                         print("[ERROR record_attendance]", e)
                     self.last_time_recorded[user_id] = current_time
