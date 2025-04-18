@@ -133,25 +133,19 @@ class FaceRecognitionWindow(QtWidgets.QMainWindow):
             else:
                 self.last_face_rectangles.append(((left_orig, top_orig, right_orig, bottom_orig), (255, 255, 0)))
 
-        # Если ни одно лицо не распознано, проверяем, прошло ли время для вызова OTP
         if not recognized_anyone and self.unknown_face_start is not None:
             elapsed = time.time() - self.unknown_face_start
-            # Измените на нужное время (например, 10 секунд)
             if elapsed >= self.UNKNOWN_TIMEOUT and not self.otp_dialog_shown:
                 self.show_otp_dialog()
 
-        # Отрисовываем overlay, если период еще активен
         if time.time() < self.overlay_until and self.overlay_text:
             draw_overlay(frame, self.overlay_text, self.overlay_color)
 
-        # Отрисовываем все рамки, сохранённые в last_face_rectangles
         for rect, color in self.last_face_rectangles:
             (left_orig, top_orig, right_orig, bottom_orig) = rect
             cv2.rectangle(frame, (left_orig, top_orig), (right_orig, bottom_orig), color, 2)
 
         self.display_frame(frame)
-
-
 
     def display_frame(self, frame):
         h, w, ch = frame.shape
