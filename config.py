@@ -4,5 +4,5 @@ USER_ENDPOINT = "/users/"
 ATTENDANCE_ENDPOINT = "/attendance/"
 
 OULU_MODEL_PATH = "facetools/checkpoints/OULU_Protocol_2_model_0_0.onnx"
-LIVENESS_THRESHOLD = 0.05
+LIVENESS_THRESHOLD = 0.24
 
