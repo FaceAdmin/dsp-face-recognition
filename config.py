@@ -1,8 +1,8 @@
-API_BASE_URL = "http://127.0.0.1:8000"
+API_BASE_URL = "https://faceadmin.org/api"
 PHOTO_ENDPOINT = "/photos/"
 USER_ENDPOINT = "/users/"
 ATTENDANCE_ENDPOINT = "/attendance/"
 
 OULU_MODEL_PATH = "facetools/checkpoints/OULU_Protocol_2_model_0_0.onnx"
-LIVENESS_THRESHOLD = 0.24
+LIVENESS_THRESHOLD = 0.5
 
