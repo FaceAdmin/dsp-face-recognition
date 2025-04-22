@@ -25,6 +25,9 @@ class FaceRecognitionWindow(QtWidgets.QMainWindow):
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
         self.cap = cv2.VideoCapture(0)
+        # self.log = open("TEST_spoof.csv", "w", encoding="utf-8")
+        # self.log.write("score\n")
+
 
         if not self.cap.isOpened():
             print("[ERROR] Could not open camera.")
@@ -106,6 +109,9 @@ class FaceRecognitionWindow(QtWidgets.QMainWindow):
                 continue
 
             liveness_score = self.liveness_detector.get_liveness_score(face_bgr)
+            print(f"[LIVENESS] score = {liveness_score:.4f}")
+            # self.log.write(f"{liveness_score:.4f}\n")
+
             if liveness_score < LIVENESS_THRESHOLD:
                 self.last_face_rectangles.append(((left_orig, top_orig, right_orig, bottom_orig), (0, 0, 255)))
                 continue

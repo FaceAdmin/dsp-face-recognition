@@ -8,3 +8,4 @@ onnxruntime==1.14.1
 progressbar==2.5
 requests==2.31.0
 pillow==10.1.0
+pyinstaller==6.13.0
