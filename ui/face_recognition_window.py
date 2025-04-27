@@ -129,7 +129,7 @@ class FaceRecognitionWindow(QtWidgets.QMainWindow):
                         self.api.record_attendance(user_id)
                         user_details = self.api.get_user(user_id)
                         full_name = f"{user_details.get('first_name', 'Unknown')} {user_details.get('last_name', '')}".strip()
-                        self.overlay_text = f"Access Granted: {full_name}"
+                        self.overlay_text = f"Access Granted"
                         self.overlay_color = (0, 255, 0)
                         self.overlay_until = time.time() + 3
                     except Exception as e:
@@ -170,7 +170,7 @@ class FaceRecognitionWindow(QtWidgets.QMainWindow):
                 user_id = verify_resp.get("user_id")
                 if user_id:
                     self.api.record_attendance(user_id)
-                    self.overlay_text = "Access Granted (OTP)"
+                    self.overlay_text = "Access Granted"
                     self.overlay_color = (0, 255, 0)
                     self.overlay_until = time.time() + 3
                 else:
