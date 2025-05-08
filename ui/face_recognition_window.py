@@ -24,7 +24,8 @@ class FaceRecognitionWindow(QtWidgets.QMainWindow):
         layout.addWidget(self.video_label)
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
-        self.cap = cv2.VideoCapture(0)
+        CAMERA_INDEX = 0
+        self.cap = cv2.VideoCapture(CAMERA_INDEX, cv2.CAP_DSHOW)
         # self.log = open("TEST_spoof.csv", "w", encoding="utf-8")
         # self.log.write("score\n")
 
